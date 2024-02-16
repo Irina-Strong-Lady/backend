@@ -1,5 +1,6 @@
 import os
 import uuid
+from datetime import datetime
 from config import config, SECRET
 from flask_cors import CORS
 from flask_migrate import Migrate
@@ -22,7 +23,8 @@ class Form(db.Model):
     name = db.Column(db.String(128), nullable=True)
     phone = db.Column(db.String(128), nullable=True)
     email = db.Column(db.String(128), nullable=True)
-    question = db.Column(db.Text, nullable=True)   
+    question = db.Column(db.Text, nullable=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)  
        
     @property
     def serialize(self):
