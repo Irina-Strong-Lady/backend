@@ -15,4 +15,4 @@ if sys.executable != INTERP:
 
 sys.path.append(os.getcwd())
 
-from main import app as application
+from manage import app as application

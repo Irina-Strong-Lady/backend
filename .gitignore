@@ -1,6 +1,6 @@
 venv
 __pycache__
-migrations
 development
+migrations
 .bashrc
 .env
