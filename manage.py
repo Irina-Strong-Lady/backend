@@ -1,10 +1,10 @@
 import os
-from app import create_app, db, bot
+from app import create_app, db
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 
 app = create_app(os.environ.get('APP_CONFIG') or 'default')
-manager = Manager(app, bot)
+manager = Manager(app)
 migrate = Migrate(app, db)
 
 @app.shell_context_processor

@@ -13,6 +13,11 @@ class Config:
     MAIL_PORT = os.environ.get('MAIL_PORT')
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    TELEBOT_START_MSG = 'Добрый день! Изложите Ваш вопрос (прошу использовать русский язык)'
+    TELEBOT_PHONE_MSG = 'Введите номер телефона в формате 79100000000 (11 цифр)'
+    TELEBOT_CONFIRM_MSG = 'Ваш вопрос передан в работу'
+    TELEBOT_END_MSG = 'Специалист свяжется с Вами в ближайшее время'
+    TELEBOT_EMAIL_HEADER = 'Клиент обратился через Telegram'
     
     @staticmethod
     def init_app(app):

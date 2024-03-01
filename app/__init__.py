@@ -3,11 +3,9 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
 from config import config
-import telebot
 
 db = SQLAlchemy()
 mail = Mail()
-bot = telebot.TeleBot(os.environ.get('TELEBOT'))
 
 def create_app(config_name):
     app = Flask(__name__)
