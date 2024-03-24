@@ -4,13 +4,45 @@ from flask import current_app
 from datetime import datetime
 from . telebot import send_message
 from . email import send_email
+from sqlalchemy_utils.types.phone_number import PhoneNumberType
+from werkzeug.security import generate_password_hash, check_password_hash
 
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), nullable=True)
-    phone = db.Column(db.String(128), nullable=True)
+    phone = db.Column(PhoneNumberType(region='RU', max_length=20))
+    password_hash = db.Column(db.String(128))
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'phone': self.phone.__str__(),
+            'password': self.password_hash,
+            'timestamp': self.timestamp
+        }
+    
+    @property
+    def password(self):
+        raise AttributeError('Password is not readable attribute')
+        
+    @password.setter
+    def password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def verify_password(self, password):
+        return check_password_hash(self.password_hash, password)
+    
+class Visitor(db.Model):
+    __tablename__ = 'visitors'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=True)
+    phone = db.Column(PhoneNumberType(region='RU', max_length=20))
     email = db.Column(db.String(128), nullable=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     question = db.relationship('Question', backref='author', lazy='dynamic', cascade='all, delete-orphan')
     telegram = db.relationship('Telegram', backref='author', lazy='dynamic', cascade='all, delete-orphan')
         
@@ -24,8 +56,8 @@ class User(db.Model):
         return {
             'id': self.id,
             'name': self.name,
-            'phone': self.phone,
-            'email': self.email,
+            'phone': self.phone.__str__(),
+            'email': self.email
         }
     
     def telebot_check_name(self, name, question):
@@ -34,8 +66,11 @@ class User(db.Model):
             db.session.add(self)
             db.session.flush()
     
+    def is_phone(self, question):
+        return bool(re.match('^\\+?[1-9][0-9]{7,14}$', question))
+    
     def telebot_check_phone(self, question, chat_id):
-        phone_check = bool(re.match('^\\+?[1-9][0-9]{7,14}$', question))
+        phone_check = self.is_phone(question)
         question_fabula = self.query_question_db(chat_id)
         if question_fabula and phone_check:      
             self.phone = question
@@ -60,9 +95,9 @@ class User(db.Model):
             fabula.telebot_check_question(question, chat_id, message_id)
             self.telebot_check_phone(question, chat_id)
             db.session.commit()
-            
+    
     def __repr__(self):
-        return '<User %r>' % self.id % self.name % self.phone
+        return '<User %r>' % self.phone.__str__()
     
 class Question(db.Model):
     __tablename__ = 'questions'
@@ -70,14 +105,14 @@ class Question(db.Model):
     question_id = db.Column(db.String(128), nullable=True)
     fabula = db.Column(db.Text, nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)  
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('visitors.id'))
 
     def __init__(self, user):
         try:
             self.user_id = user.id
         except AttributeError:
-            print('Пользователь не был добавлен в БД до занесения своего вопроса')
-            pass           
+            print('Пользователь не существует')
+            pass
     
     @property
     def serialize(self):
@@ -89,7 +124,7 @@ class Question(db.Model):
         } 
     
     def __repr__(self):
-        return '<Question %r>' % self.id % self.user_id
+        return '<Question %r>' % self.question_id
 
 class Telegram(db.Model):
     __tablename__ = 'telegrams'
@@ -98,10 +133,14 @@ class Telegram(db.Model):
     message_id = db.Column(db.String(128), nullable=True)
     message = db.Column(db.Text, nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)  
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('visitors.id'))
 
     def __init__(self, user):
-        self.user_id = user.id
+        try:
+            self.user_id = user.id
+        except AttributeError:
+            print('Пользователь не существует')
+            pass
     
     @property
     def serialize(self):
@@ -122,4 +161,4 @@ class Telegram(db.Model):
             send_message(chat_id, text=current_app.config['TELEBOT_CONFIRM_MSG'])
 
     def __repr__(self):
-        return '<Telebot %r>' % self.id % self.user_id
+        return '<Telebot %r>' % self.message_id
