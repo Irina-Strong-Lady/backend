@@ -3,11 +3,12 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     SECRET = os.environ.get('SECRET')
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'a5b88d557bee98d2b8ab356b01d6f41e'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or '8bd4e518a5eca344972816942ec338a2'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
     APP_ADMIN = os.environ.get('APP_ADMIN')
     APP_MAIL_SUBJECT_PREFIX = '["Центр правовой помощи при банкротстве"]'
+    # APP_MAIL_SUBJECT_PREFIX = '["post.mvd.ru"]'
     APP_MAIL_SENDER = os.environ.get('MAIL_USERNAME')
     MAIL_SERVER = os.environ.get('MAIL_SERVER')
     MAIL_PORT = os.environ.get('MAIL_PORT')
@@ -41,6 +42,15 @@ class DevelopmentConfig(Config):
                               'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
     Config.create_db()
 
+class TestingConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
+    WTF_CSRF_ENABLED = False
+    SERVER_NAME='localhost:8000'
+    COOKIE_DEFAULT_DOMAIN = SESSION_COOKIE_DOMAIN = DEFAULT_SERVER = '0.0.0.0'
+    Config.create_db()
+
 class ProductionConfig(Config):
     DEBUG = False
     MAIL_USE_TLS = True
@@ -48,6 +58,7 @@ class ProductionConfig(Config):
 
 config = {
     'development': DevelopmentConfig,
+    'testing': TestingConfig,
     'production': ProductionConfig,
     'default': DevelopmentConfig
 }

@@ -1,0 +1,1 @@
+{{ user.name }} {{ user.phone }} нажмите {{ url_for('auth.confirm', token=token, _external=True) }}

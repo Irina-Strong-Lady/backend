@@ -1,0 +1,2 @@
+<p>{{ user.name }} {{ user.phone }} нажмите <a href="{{ url_for('auth.confirm', token=token, _external=True) }}">нажмите на ссылку</a>.</p>
+<p>{{ url_for('auth.confirm', token=token, _external=True) }}</p>

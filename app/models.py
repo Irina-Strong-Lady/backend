@@ -1,18 +1,22 @@
-import os, re
+import re, base64
 from app import db
+from . import login_manager
 from flask import current_app
 from datetime import datetime
 from . telebot import send_message
 from . email import send_email
 from sqlalchemy_utils.types.phone_number import PhoneNumberType
+from flask_login import UserMixin, AnonymousUserMixin, login_user
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from werkzeug.security import generate_password_hash, check_password_hash
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), nullable=True)
     phone = db.Column(PhoneNumberType(region='RU', max_length=20))
     password_hash = db.Column(db.String(128))
+    confirmed = db.Column(db.Boolean, default=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     @property
@@ -22,6 +26,7 @@ class User(db.Model):
             'name': self.name,
             'phone': self.phone.__str__(),
             'password': self.password_hash,
+            'confirmed': self.confirmed,
             'timestamp': self.timestamp
         }
     
@@ -36,6 +41,62 @@ class User(db.Model):
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
     
+    @classmethod
+    def generate_users(cls):
+        return cls.query.all()
+    
+    @classmethod
+    def generate_users_by_name(cls, name):
+        return cls.query.filter_by(name=name).all()
+    
+    def verify_users_by_password(self, password):
+        users_list = list(filter(lambda item: item.verify_password(password), 
+                                 self.generate_users()))
+        return users_list
+    
+    def verify_user_by_password(self, name, password):
+        users_list = list(filter(lambda item: item.verify_password(password), 
+                                 self.generate_users_by_name(name)))
+        return [item.serialize for item in users_list]
+    
+    def generate_confirmation_token(self, expiration=3600):
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
+        return s.dumps({'confirm': self.id})
+
+    def confirm(self, token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token.encode('utf-8'))
+        except:
+            return False
+        if data.get('confirm') != self.id:
+            return False
+        self.confirmed = True
+        db.session.add(self)
+        return True
+    
+    def decode_user(self, request):
+        token = request.headers.get('Authorization')
+        if token:
+            token = token.replace('Basic ', '', 1)
+            try:
+                token = base64.b64decode(token)
+                token = token.decode('utf-8')
+            except TypeError:
+                pass
+            name, password = token.split(':')
+            return name, password
+        return None
+
+class AnonymousUser(AnonymousUserMixin):
+    pass    
+
+login_manager.anonymous_user = AnonymousUser
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 class Visitor(db.Model):
     __tablename__ = 'visitors'
     id = db.Column(db.Integer, primary_key=True)
