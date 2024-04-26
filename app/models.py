@@ -1,13 +1,13 @@
+import jwt
 import re, base64
 from app import db
 from . import login_manager
 from flask import current_app
-from datetime import datetime
-from . telebot import send_message
 from . email import send_email
+from . telebot import send_message
+from datetime import datetime, timedelta, timezone
+from flask_login import UserMixin, AnonymousUserMixin
 from sqlalchemy_utils.types.phone_number import PhoneNumberType
-from flask_login import UserMixin, AnonymousUserMixin, login_user
-from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from werkzeug.security import generate_password_hash, check_password_hash
 
 class User(UserMixin, db.Model):
@@ -59,14 +59,27 @@ class User(UserMixin, db.Model):
                                  self.generate_users_by_name(name)))
         return [item.serialize for item in users_list]
     
+    # Confirmation token section
     def generate_confirmation_token(self, expiration=3600):
-        s = Serializer(current_app.config['SECRET_KEY'], expiration)
-        return s.dumps({'confirm': self.id})
+        return jwt.encode({
+                            'confirm': self.id,
+                            'exp': datetime.now(tz=timezone.utc) + timedelta(seconds=expiration)
+                            },
+                            current_app.config['SECRET_KEY'],
+                            algorithm='HS256'
+                          )
+    
+    @classmethod
+    def get_user_by_confirmation_token(cls, token):
+        try:
+            data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'], options={'verify_signature': False})
+        except:
+            return False
+        return cls.query.filter_by(id=data.get('confirm')).first()
 
     def confirm(self, token):
-        s = Serializer(current_app.config['SECRET_KEY'])
         try:
-            data = s.loads(token.encode('utf-8'))
+            data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
         except:
             return False
         if data.get('confirm') != self.id:

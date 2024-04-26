@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<title>Центр правовой помощи при банкротстве</title>
+<head>
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="wrapper">
+  <div>
+    <h1 class="text-wrapper">
+      <strong>
+        {% if user and user.confirmed %}
+          Регистрация пользователя {{user.phone}} подтверждена!
+        {% elif user == False %}
+          Подтверждающая ссылка повреждена или истёк срок её действия
+        {% elif not user %}
+            Нажмите ссылку ещё раз
+        {% endif %}
+      </strong>
+    </h1>
+  </div>
+</body>

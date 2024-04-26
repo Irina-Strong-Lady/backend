@@ -4,14 +4,13 @@ from . import auth_http
 from .. models import User
 from .. email import send_email
 from .. decorators import secret_required
-from flask import session, current_app, request, current_app, jsonify
-from flask_login import current_user, logout_user, login_required
+from flask import current_app, request, current_app, jsonify, render_template
+from flask_login import login_user, logout_user, login_required, current_user
 
 @auth.route('/')
 def index():
-    return '<strong>The view function index done!</strong>', 200
+    return render_template('auth/index.html')
 
-@auth_http.verify_password
 @auth.route('/register')
 @secret_required
 def register():
@@ -21,11 +20,17 @@ def register():
     phone = request.headers.get('phone')
     user = User.query.filter_by(phone=phone).first()
     if user:            
-        if user.verify_password(password):
+        if user.verify_password(password) and user.confirmed:
             user.name = name
             db.session.add(user)
             response_object['warning'] = 'success'
             response_object['message'] = f'Данные пользователя {phone} обновлены'
+        elif user.verify_password(password) and not user.confirmed:
+            token = user.generate_confirmation_token()
+            send_email(current_app.config['APP_ADMIN'], 'Подтвердите регистрацию нового пользователя',
+                    'auth/email/confirm_job', user=user, token=token)
+            response_object['warning'] = 'success'
+            response_object['message'] = 'Заявка повторно направлена администратору'
         else:
             response_object['warning'] = 'warning'
             response_object['message'] = 'У Вас нет прав на редактирование \
@@ -38,7 +43,7 @@ def register():
             auth_http.current_user = user
             token = user.generate_confirmation_token()
             send_email(current_app.config['APP_ADMIN'], 'Подтвердите регистрацию нового пользователя',
-                    'auth/email/confirm', user=user, token=token)
+                    'auth/email/confirm_job', user=user, token=token)
 
             response_object['warning'] = 'success'
             response_object['message'] = 'Заявка направлена администратору'
@@ -49,7 +54,6 @@ def register():
     db.session.commit()
     return jsonify(response_object), 200   
 
-@auth_http.verify_password
 @auth.route('/login')
 @secret_required
 def login():
@@ -71,7 +75,6 @@ def login():
             response_object['response'] = response
             response_object['warning'] = 'success'
             response_object['message'] = f"Добро пожаловать, {response[0].get('name')}"
-            print(session.__dict__)
         else:
             response_object['response'] = response
             response_object['warning'] = 'warning'
@@ -82,17 +85,22 @@ def login():
 @auth.route('/confirm/<token>')
 @login_required
 def confirm(token):
-    if current_user.confirmed:
-        print('Аккаунт подтвержден')
-    elif current_user.confirm(token):
-        db.session.commit()
-        print('Вы успешно подтвердили регистрацию нового сотрудника!')
-        send_email(current_app.config['APP_ADMIN'], 
-                   'Вы успешно подтвердили регистрацию нового сотрудника!',
-                   'auth/email/confirmed', user=current_user)
-    else:
-        print('Подтверждающая ссылка повреждена или истек срок её действия')
-    return '<strong>The view function confirm done!</strong>', 200
+    user = User.get_user_by_confirmation_token(token)
+    if user:
+        login_user(user)
+        if user.confirmed:
+            print('Аккаунт подтвержден')
+        elif user.confirm(token):
+            db.session.commit()
+            print('Вы успешно подтвердили регистрацию нового сотрудника!')
+            send_email(current_app.config['APP_ADMIN'], 
+                    'Вы успешно подтвердили регистрацию нового сотрудника!',
+                    'auth/email/confirmed_job', user=user)
+        elif user.confirm(token) is False:
+            user = user.confirm(token)
+            print('Подтверждающая ссылка повреждена или истек срок её действия')
+            return render_template('auth/index.html', user=user)
+        return render_template('auth/index.html', user=user)
 
 @auth.route('/logout')
 @login_required
