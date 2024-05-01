@@ -28,7 +28,7 @@ def register():
         elif user.verify_password(password) and not user.confirmed:
             token = user.generate_confirmation_token()
             send_email(current_app.config['APP_ADMIN'], 'Подтвердите регистрацию нового пользователя',
-                    'auth/email/confirm_job', user=user, token=token)
+                    'auth/email/confirm', user=user, token=token)
             response_object['warning'] = 'success'
             response_object['message'] = 'Заявка повторно направлена администратору'
         else:
@@ -43,7 +43,7 @@ def register():
             auth_http.current_user = user
             token = user.generate_confirmation_token()
             send_email(current_app.config['APP_ADMIN'], 'Подтвердите регистрацию нового пользователя',
-                    'auth/email/confirm_job', user=user, token=token)
+                    'auth/email/confirm', user=user, token=token)
 
             response_object['warning'] = 'success'
             response_object['message'] = 'Заявка направлена администратору'
@@ -86,7 +86,9 @@ def login():
 @login_required
 def confirm(token):
     user = User.get_user_by_confirmation_token(token)
-    if user:
+    if not user:
+        return render_template('auth/index.html', user=user)
+    elif user:
         login_user(user)
         if user.confirmed:
             print('Аккаунт подтвержден')
@@ -99,8 +101,45 @@ def confirm(token):
         elif user.confirm(token) is False:
             user = user.confirm(token)
             print('Подтверждающая ссылка повреждена или истек срок её действия')
-            return render_template('auth/index.html', user=user)
+            return user
         return render_template('auth/index.html', user=user)
+    
+@auth.route('/reset')
+@secret_required
+def reset():
+    user = User()
+    response_object = {}
+    name, password = user.decode_user(request)
+    phone = request.headers.get('phone')
+    user = User.verify_user_by_phone(phone)
+    if len(user.verify_users_by_password(password)) != 0:
+        response_object['warning'] = 'warning'
+        response_object['message'] = 'Недопустимый пароль. \
+                                            Измените один или несколько символов'
+    elif user and user.name == name:
+        user.password = password
+        token = user.generate_confirmation_token()
+        send_email(current_app.config['APP_ADMIN'], 'Подтвердите изменение пароля',
+                'auth/email/reset', user=user, token=token)
+        response_object['warning'] = 'success'
+        response_object['message'] = 'Заявка на изменение пароля направлена администратору'
+    else:
+        response_object['warning'] = 'warning'
+        response_object['message'] = 'Ошибка в имени или номере телефона'
+    return jsonify(response_object), 200
+
+@auth.route('/password_reset/<token>')
+@login_required
+def password_reset(token):
+    user = User.get_user_by_reset_token(token)
+    password_hash = User.get_hash_by_confirmation_token(token)
+    if user:
+        user.password_hash = password_hash
+        db.session.add(user)
+        db.session.commit()
+        print('Изменение пароля подтверждено!')
+        return render_template('auth/password_reset.html', user=user)
+    return render_template('auth/password_reset.html')
 
 @auth.route('/logout')
 @login_required

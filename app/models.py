@@ -1,5 +1,5 @@
 import jwt
-import re, base64
+import os, re, base64
 from app import db
 from . import login_manager
 from flask import current_app
@@ -59,11 +59,16 @@ class User(UserMixin, db.Model):
                                  self.generate_users_by_name(name)))
         return [item.serialize for item in users_list]
     
+    @classmethod
+    def verify_user_by_phone(cls, phone):
+        return cls.query.filter_by(phone=phone).first()
+    
     # Confirmation token section
     def generate_confirmation_token(self, expiration=3600):
         return jwt.encode({
                             'confirm': self.id,
-                            'exp': datetime.now(tz=timezone.utc) + timedelta(seconds=expiration)
+                            'exp': datetime.now(tz=timezone.utc) + timedelta(seconds=expiration),
+                            'password_hash': self.password_hash
                             },
                             current_app.config['SECRET_KEY'],
                             algorithm='HS256'
@@ -72,10 +77,26 @@ class User(UserMixin, db.Model):
     @classmethod
     def get_user_by_confirmation_token(cls, token):
         try:
+            data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+        except:
+            return False
+        return cls.query.filter_by(id=data.get('confirm')).first()
+    
+    @classmethod
+    def get_user_by_reset_token(cls, token):
+        try:
             data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'], options={'verify_signature': False})
         except:
             return False
         return cls.query.filter_by(id=data.get('confirm')).first()
+    
+    @classmethod
+    def get_hash_by_confirmation_token(cls, token):
+        try:
+            data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'], options={'verify_signature': False})
+        except:
+            return False
+        return data.get('password_hash')
 
     def confirm(self, token):
         try:
@@ -150,10 +171,10 @@ class Visitor(db.Model):
             self.phone = question
             db.session.add(self)
             send_message(chat_id, text=current_app.config['TELEBOT_END_MSG'])
-            # send_email(os.environ.get('APP_ADMIN'), 
-            #            current_app.config['TELEBOT_EMAIL_HEADER'], 
-            #            'mail/send_admin_telebot', name=self.name, 
-            #            phone=self.phone, question=question_fabula.message)
+            send_email(os.environ.get('APP_ADMIN'), 
+                       current_app.config['TELEBOT_EMAIL_HEADER'], 
+                       'mail/send_admin_telebot', name=self.name, 
+                       phone=self.phone, question=question_fabula.message)
         elif question_fabula and phone_check is False:
             send_message(chat_id, text=current_app.config['TELEBOT_PHONE_MSG'])
     
