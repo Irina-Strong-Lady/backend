@@ -171,10 +171,10 @@ class Visitor(db.Model):
             self.phone = question
             db.session.add(self)
             send_message(chat_id, text=current_app.config['TELEBOT_END_MSG'])
-            send_email(os.environ.get('APP_ADMIN'), 
-                       current_app.config['TELEBOT_EMAIL_HEADER'], 
-                       'mail/send_admin_telebot', name=self.name, 
-                       phone=self.phone, question=question_fabula.message)
+            # send_email(os.environ.get('APP_ADMIN'), 
+            #            current_app.config['TELEBOT_EMAIL_HEADER'], 
+            #            'mail/send_admin_telebot', name=self.name, 
+            #            phone=self.phone, question=question_fabula.message)
         elif question_fabula and phone_check is False:
             send_message(chat_id, text=current_app.config['TELEBOT_PHONE_MSG'])
     
