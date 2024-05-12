@@ -1,16 +1,14 @@
 import jwt
 import os, re, base64
 from app import db
-from . import login_manager
 from flask import current_app
 from . email import send_email
 from . telebot import send_message
 from datetime import datetime, timedelta, timezone
-from flask_login import UserMixin, AnonymousUserMixin
 from sqlalchemy_utils.types.phone_number import PhoneNumberType
 from werkzeug.security import generate_password_hash, check_password_hash
 
-class User(UserMixin, db.Model):
+class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), nullable=True)
@@ -67,8 +65,9 @@ class User(UserMixin, db.Model):
     def generate_confirmation_token(self, expiration=3600):
         return jwt.encode({
                             'confirm': self.id,
-                            'exp': datetime.now(tz=timezone.utc) + timedelta(seconds=expiration),
-                            'password_hash': self.password_hash
+                            'name': self.name,
+                            'phone': self.phone.__str__(),
+                            'exp': datetime.now(tz=timezone.utc) + timedelta(seconds=expiration)                            
                             },
                             current_app.config['SECRET_KEY'],
                             algorithm='HS256'
@@ -122,15 +121,6 @@ class User(UserMixin, db.Model):
             return name, password
         return None
 
-class AnonymousUser(AnonymousUserMixin):
-    pass    
-
-login_manager.anonymous_user = AnonymousUser
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
 class Visitor(db.Model):
     __tablename__ = 'visitors'
     id = db.Column(db.Integer, primary_key=True)
@@ -172,9 +162,9 @@ class Visitor(db.Model):
             db.session.add(self)
             send_message(chat_id, text=current_app.config['TELEBOT_END_MSG'])
             # send_email(os.environ.get('APP_ADMIN'), 
-            #            current_app.config['TELEBOT_EMAIL_HEADER'], 
-            #            'mail/send_admin_telebot', name=self.name, 
-            #            phone=self.phone, question=question_fabula.message)
+                       # current_app.config['TELEBOT_EMAIL_HEADER'], 
+                       # 'mail/send_admin_telebot', name=self.name, 
+                       # phone=self.phone, question=question_fabula.message)
         elif question_fabula and phone_check is False:
             send_message(chat_id, text=current_app.config['TELEBOT_PHONE_MSG'])
     

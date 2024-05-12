@@ -59,6 +59,7 @@ def login():
     name, password = user.decode_user(request)
     users = User.generate_users_by_name(name)
     response = user.verify_user_by_password(name, password)
+    user = user.verify_users_by_password(password)[0]
     if len(users) == 0:
         response_object['warning'] = 'warning'          
         response_object['message'] = 'Пользователь с таким именем не существует'
@@ -66,11 +67,11 @@ def login():
         response_object['warning'] = 'warning'          
         response_object['message'] = f'Пароль пользователя {name} не совпадает'
     elif response[0]['confirmed']:
-        response_object['response'] = response
+        token = user.generate_confirmation_token()
+        response_object['token'] = token
         response_object['warning'] = 'success'
         response_object['message'] = f"Добро пожаловать, {response[0].get('name')}"
     else:
-        response_object['response'] = response
         response_object['warning'] = 'warning'
         response_object['message'] = f"Регистрация пользователя {response[0].get('name')} \
                                         требует подверждения администратором"

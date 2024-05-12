@@ -2,8 +2,6 @@ import os
 from functools import wraps
 from flask import json, request
 from . response import MyResponse
-from flask_login import login_user
-from . models import User
 
 def secret_decorator(secret):
     def decorator(f):
