@@ -7,8 +7,8 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
     APP_ADMIN = os.environ.get('APP_ADMIN')
-    # APP_MAIL_SUBJECT_PREFIX = '["Центр правовой помощи при банкротстве"]'
-    APP_MAIL_SUBJECT_PREFIX = '["post.mvd.ru"]'
+    APP_MAIL_SUBJECT_PREFIX = '["Центр правовой помощи при банкротстве"]'
+    # APP_MAIL_SUBJECT_PREFIX = '["post.mvd.ru"]'
     APP_MAIL_SENDER = os.environ.get('MAIL_USERNAME')
     MAIL_SERVER = os.environ.get('MAIL_SERVER')
     MAIL_PORT = os.environ.get('MAIL_PORT')

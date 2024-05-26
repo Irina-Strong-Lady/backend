@@ -207,6 +207,15 @@ class Question(db.Model):
             'fabula': self.fabula,
             'timestamp': self.timestamp
         } 
+    @classmethod
+    def serialize_all(cls):
+        questions_list = []
+        questions = cls.query.all()
+        for item in questions:
+            obj = {'id': item.id, 'question_id': item.question_id,
+                   'fabula': item.fabula, 'timestamp': item.timestamp }
+            questions_list.append(obj)
+        return questions_list            
     
     def __repr__(self):
         return '<Question %r>' % self.question_id
