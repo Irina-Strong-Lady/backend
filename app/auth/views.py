@@ -26,7 +26,7 @@ def register():
         elif user.verify_password(password) and not user.confirmed:
             token = user.generate_confirmation_token()
             send_email(current_app.config['APP_ADMIN'], 'Подтвердите регистрацию нового пользователя',
-                    'auth/email/confirm', user=user, token=token)
+                    'auth/email/confirm_job', user=user, token=token)
             response_object['warning'] = 'success'
             response_object['message'] = 'Заявка повторно направлена администратору'
         else:
@@ -40,7 +40,7 @@ def register():
             db.session.commit()
             token = user.generate_confirmation_token()
             send_email(current_app.config['APP_ADMIN'], 'Подтвердите регистрацию нового пользователя',
-                    'auth/email/confirm', user=user, token=token)
+                    'auth/email/confirm_job', user=user, token=token)
 
             response_object['warning'] = 'success'
             response_object['message'] = 'Заявка направлена администратору'
@@ -58,8 +58,7 @@ def login():
     response_object = {}
     name, password = user.decode_user(request)
     users = User.generate_users_by_name(name)
-    response = user.verify_user_by_password(name, password)
-    user = user.verify_users_by_password(password)[0]
+    response = user.verify_user_by_password(name, password)    
     if len(users) == 0:
         response_object['warning'] = 'warning'          
         response_object['message'] = 'Пользователь с таким именем не существует'
@@ -67,6 +66,7 @@ def login():
         response_object['warning'] = 'warning'          
         response_object['message'] = f'Пароль пользователя {name} не совпадает'
     elif response[0]['confirmed']:
+        user = user.verify_users_by_password(password)[0]
         token = user.generate_confirmation_token()
         response_object['token'] = token
         response_object['warning'] = 'success'
@@ -90,7 +90,7 @@ def confirm(token):
             print('Вы успешно подтвердили регистрацию нового сотрудника!')
             send_email(current_app.config['APP_ADMIN'], 
                     'Вы успешно подтвердили регистрацию нового сотрудника!',
-                    'auth/email/confirmed', user=user)
+                    'auth/email/confirmed_job', user=user)
         elif user.confirm(token) is False:
             user = user.confirm(token)
             print('Подтверждающая ссылка повреждена или истек срок её действия')
@@ -113,7 +113,7 @@ def reset():
         user.password = password
         token = user.generate_confirmation_token()
         send_email(current_app.config['APP_ADMIN'], 'Подтвердите изменение пароля',
-                'auth/email/reset', user=user, token=token)
+                'auth/email/reset_job', user=user, token=token)
         response_object['warning'] = 'success'
         response_object['message'] = 'Заявка на изменение пароля направлена администратору'
     else:

@@ -55,9 +55,9 @@ def questions():
         db.session.commit()
         response_object['warning'] = 'success'
         response_object['message'] = 'Успешно! Ваш вопрос передан в обработку'
-        send_email(os.environ.get('APP_ADMIN'), f'Заявка № {question.id}', 'mail/send_admin', visitor=visitor, question=question)
-        if visitor.email != '':
-            send_email(visitor.email, f'Номер Вашей заявки (заявка № {question.id})', 'mail/send_user', visitor=visitor, question=question)
+        # send_email(os.environ.get('APP_ADMIN'), f'Заявка № {question.id}', 'mail/send_admin', visitor=visitor, question=question)
+        # if visitor.email != '':
+        #     send_email(visitor.email, f'Номер Вашей заявки (заявка № {question.id})', 'mail/send_user', visitor=visitor, question=question)
     else:
         response_object['warning'] = 'error'
         response_object['message'] = 'Внутренняя ошибка сервера. Попробуйте позже' 
@@ -71,6 +71,26 @@ def get_questions_list():
         questions = Question.serialize_all()
         response_object['response'] = questions
     return jsonify(response_object)
+
+@main.route('/question_update/<id>', methods=['PUT', 'DELETE'])
+@secret_required
+def single_question(id):   
+    response_object = {}
+    if request.method == 'PUT':
+        post_data = request.get_json()
+        question = Question.query.filter_by(id=id).first()
+        question.fabula=post_data.get('fabula')
+        db.session.add(question)
+        db.session.commit()                
+        response_object['warning'] = 'success'
+        response_object['message'] = 'Фабула обновлена!'   
+    if request.method == 'DELETE':
+        question = Question.query.filter_by(id=id).first()
+        db.session.delete(question)
+        db.session.commit()
+        response_object['warning'] = 'success'
+        response_object['message'] = f'Вопрос № {id} удален из базы данных!'
+    return jsonify(response_object) 
 
 @main.route('/telegrams', methods=['GET', 'POST'])
 def telegrams():
@@ -90,25 +110,4 @@ def telegrams():
     else:
         response_object['telegrams'] = telegrams
         print('Message or text key is not in request.json')
-    return jsonify(response_object)       
-
-# @main.route('/<id>', methods=['PUT', 'DELETE'])
-# def single_question(id):   
-#     response_object = {}
-#     if request.method == 'PUT':
-#         post_data = request.get_json()
-#         question = Question.query.filter_by(id=id).first()
-#         question.author.name=post_data.get('name') 
-#         question.author.phone=post_data.get('phone')
-#         question.author.email=post_data.get('email')
-#         question.fabula=post_data.get('question')
-#         db.session.add(question)
-#         db.session.commit()                
-#         response_object['message'] = 'Вопрос обновлен в базе данных!'
-#     if request.method == 'DELETE':
-#         question = Question.query.filter_by(id=id).first()
-#         db.session.delete(question)
-#         db.session.commit()
-#         response_object['message'] = f'Вопрос № {id} удален из базы данных!'
-#     return jsonify(response_object) 
- 
+    return jsonify(response_object)        
