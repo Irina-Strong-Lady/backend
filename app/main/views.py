@@ -4,7 +4,7 @@ from flask import request, current_app, \
                   jsonify, send_from_directory
 from . import main
 from .. import db
-from .. models import Visitor, Question, Telegram
+from .. models import User, Visitor, Question, Telegram
 from .. email import send_email
 from .. telebot import send_message
 from .. decorators import secret_required
@@ -65,11 +65,11 @@ def questions():
 
 @main.route('/questions_list')
 @secret_required
-def get_questions_list():    
+def get_merge_list():    
     response_object = {} 
     if request.method == 'GET':
-        questions = Question.serialize_all()
-        response_object['response'] = questions
+        data = Question.merge_serialized_data()
+        response_object['response'] = data
     return jsonify(response_object)
 
 @main.route('/question_update/<id>', methods=['PUT', 'DELETE'])
@@ -80,6 +80,8 @@ def single_question(id):
         post_data = request.get_json()
         question = Question.query.filter_by(id=id).first()
         question.fabula=post_data.get('fabula')
+        if post_data.get('id') != '':
+            question.executor_id = post_data.get('id')
         db.session.add(question)
         db.session.commit()                
         response_object['warning'] = 'success'

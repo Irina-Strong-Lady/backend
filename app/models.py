@@ -16,6 +16,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(128))
     confirmed = db.Column(db.Boolean, default=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    questions = db.relationship('Question', backref='executor', lazy='dynamic')
 
     @property
     def serialize(self):
@@ -27,6 +28,16 @@ class User(db.Model):
             'confirmed': self.confirmed,
             'timestamp': self.timestamp
         }
+    
+    @classmethod
+    def serialize_all(cls):
+        users_list = []
+        users = cls.query.all()
+        for item in users:
+            obj = {'id': item.id, 'name': item.name,
+                   'phone': item.phone.__str__()}
+            users_list.append(obj)
+        return users_list
     
     @property
     def password(self):
@@ -171,7 +182,7 @@ class Visitor(db.Model):
     def telebot_check_user_exist(self, name, question, chat_id, message_id):
         fabula = self.query_question_db(chat_id)
         if fabula:
-            self = self.query.filter_by(id=fabula.user_id).first()
+            self = self.query.filter_by(id=fabula.visitor_id).first()
             self.telebot_check_phone(question, chat_id)
             db.session.commit()
         else:
@@ -190,11 +201,12 @@ class Question(db.Model):
     question_id = db.Column(db.String(128), nullable=True)
     fabula = db.Column(db.Text, nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)  
-    user_id = db.Column(db.Integer, db.ForeignKey('visitors.id'))
+    visitor_id = db.Column(db.Integer, db.ForeignKey('visitors.id'))
+    executor_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     def __init__(self, user):
         try:
-            self.user_id = user.id
+            self.visitor_id = user.id
         except AttributeError:
             print('Пользователь не существует')
             pass
@@ -212,10 +224,27 @@ class Question(db.Model):
         questions_list = []
         questions = cls.query.all()
         for item in questions:
-            obj = {'id': item.id, 'question_id': item.question_id,
-                   'fabula': item.fabula, 'timestamp': item.timestamp }
+            if item.executor:
+                obj = {'id': item.id, 'question_id': item.question_id,
+                    'fabula': item.fabula, 'timestamp': item.timestamp, 
+                    'executor': item.executor.name
+                    }
+            else:
+                obj = {'id': item.id, 'question_id': item.question_id,
+                    'fabula': item.fabula, 'timestamp': item.timestamp
+                    }
             questions_list.append(obj)
-        return questions_list            
+        return questions_list 
+    
+    @classmethod
+    def merge_serialized_data(cls):
+        data = []
+        add_obj_list = User.serialize_all()
+        data_list = cls.serialize_all()
+        for item in data_list:
+            item['user'] = add_obj_list   
+            data.append(item) 
+        return data  
     
     def __repr__(self):
         return '<Question %r>' % self.question_id
@@ -227,11 +256,11 @@ class Telegram(db.Model):
     message_id = db.Column(db.String(128), nullable=True)
     message = db.Column(db.Text, nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)  
-    user_id = db.Column(db.Integer, db.ForeignKey('visitors.id'))
+    visitor_id = db.Column(db.Integer, db.ForeignKey('visitors.id'))
 
     def __init__(self, user):
         try:
-            self.user_id = user.id
+            self.visitor_id = user.id
         except AttributeError:
             print('Пользователь не существует')
             pass
