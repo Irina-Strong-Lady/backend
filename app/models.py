@@ -17,6 +17,7 @@ class User(db.Model):
     confirmed = db.Column(db.Boolean, default=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     questions = db.relationship('Question', backref='executor', lazy='dynamic')
+    telegrams = db.relationship('Telegram', backref='executor', lazy='dynamic')
 
     @property
     def serialize(self):
@@ -76,6 +77,7 @@ class User(db.Model):
     def generate_confirmation_token(self, expiration=3600):
         return jwt.encode({
                             'confirm': self.id,
+                            'password_hash': self.password_hash,
                             'name': self.name,
                             'phone': self.phone.__str__(),
                             'exp': datetime.now(tz=timezone.utc) + timedelta(seconds=expiration)                            
@@ -226,12 +228,13 @@ class Question(db.Model):
         for item in questions:
             if item.executor:
                 obj = {'id': item.id, 'question_id': item.question_id,
-                    'fabula': item.fabula, 'timestamp': item.timestamp, 
-                    'executor': item.executor.name
+                    'fabula': item.fabula, 'timestamp': item.timestamp,
+                    'origin': 'Сайт', 'executor': item.executor.name
                     }
             else:
                 obj = {'id': item.id, 'question_id': item.question_id,
-                    'fabula': item.fabula, 'timestamp': item.timestamp
+                    'fabula': item.fabula, 'timestamp': item.timestamp, 
+                    'origin': 'Сайт'
                     }
             questions_list.append(obj)
         return questions_list 
@@ -240,11 +243,16 @@ class Question(db.Model):
     def merge_serialized_data(cls):
         data = []
         add_obj_list = User.serialize_all()
-        data_list = cls.serialize_all()
-        for item in data_list:
-            item['user'] = add_obj_list   
-            data.append(item) 
-        return data  
+        data_questions_list = cls.serialize_all()
+        data_telegrams_list = Telegram.serialize_all()
+        data_questions_list.extend(data_telegrams_list)
+        set_id = 0
+        for item in data_questions_list:
+            set_id += 1
+            item['id'] = set_id 
+            item['user'] = add_obj_list  
+            data.append(item)                  
+        return data
     
     def __repr__(self):
         return '<Question %r>' % self.question_id
@@ -257,6 +265,7 @@ class Telegram(db.Model):
     message = db.Column(db.Text, nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)  
     visitor_id = db.Column(db.Integer, db.ForeignKey('visitors.id'))
+    executor_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     def __init__(self, user):
         try:
@@ -273,6 +282,24 @@ class Telegram(db.Model):
             'fabula': self.message,
             'timestamp': self.timestamp
         }
+    
+    @classmethod
+    def serialize_all(cls):
+        telegrams_list = []
+        telegrams = cls.query.all()
+        for item in telegrams:
+            if item.executor:
+                obj = {'id': item.id, 'question_id': item.message_id,
+                    'fabula': item.message, 'timestamp': item.timestamp,
+                    'origin': 'Telegram', 'executor': item.executor.name
+                    }
+            else:
+                obj = {'id': item.id, 'question_id': item.message_id,
+                    'fabula': item.message, 'timestamp': item.timestamp,
+                    'origin': 'Telegram'
+                    }
+            telegrams_list.append(obj)
+        return telegrams_list
     
     def telebot_check_question(self, question, chat_id, message_id):
         if bool(re.match('[а-яА-Я]', question)):

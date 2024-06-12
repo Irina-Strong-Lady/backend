@@ -72,27 +72,44 @@ def get_merge_list():
         response_object['response'] = data
     return jsonify(response_object)
 
-@main.route('/question_update/<id>', methods=['PUT', 'DELETE'])
+@main.route('/question_update/<question_id>', methods=['PUT', 'DELETE'])
 @secret_required
-def single_question(id):   
+def single_question(question_id):   
     response_object = {}
     if request.method == 'PUT':
         post_data = request.get_json()
-        question = Question.query.filter_by(id=id).first()
-        question.fabula=post_data.get('fabula')
-        if post_data.get('id') != '':
-            question.executor_id = post_data.get('id')
-        db.session.add(question)
-        db.session.commit()                
-        response_object['warning'] = 'success'
-        response_object['message'] = 'Фабула обновлена!'   
+        question = Question.query.filter_by(question_id=question_id).first()
+        if question:
+            question.fabula=post_data.get('fabula')
+            if post_data.get('id') != '':
+                question.executor_id = post_data.get('id')
+            db.session.add(question)
+            db.session.commit()                
+            response_object['warning'] = 'success'
+            response_object['message'] = 'Фабула обновлена!' 
+        telegram = Telegram.query.filter_by(message_id=question_id).first()
+        if telegram:
+            telegram.message=post_data.get('fabula')
+            if post_data.get('id') != '':
+                telegram.executor_id = post_data.get('id')
+            db.session.add(telegram)
+            db.session.commit()                
+            response_object['warning'] = 'success'
+            response_object['message'] = 'Фабула обновлена!'
     if request.method == 'DELETE':
-        question = Question.query.filter_by(id=id).first()
-        db.session.delete(question)
-        db.session.commit()
-        response_object['warning'] = 'success'
-        response_object['message'] = f'Вопрос № {id} удален из базы данных!'
-    return jsonify(response_object) 
+        question = Question.query.filter_by(question_id=question_id).first()
+        if question:
+            db.session.delete(question)
+            db.session.commit()
+            response_object['warning'] = 'success'
+            response_object['message'] = f'Вопрос № {question.id} удален из базы данных!'
+        telegram = Telegram.query.filter_by(message_id=question_id).first()
+        if telegram:
+            db.session.delete(telegram)
+            db.session.commit()
+            response_object['warning'] = 'success'
+            response_object['message'] = f'Вопрос № {telegram.id} удален из базы данных!'
+    return jsonify(response_object)
 
 @main.route('/telegrams', methods=['GET', 'POST'])
 def telegrams():
