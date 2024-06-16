@@ -80,8 +80,11 @@ def single_question(question_id):
         post_data = request.get_json()
         question = Question.query.filter_by(question_id=question_id).first()
         if question:
-            question.fabula=post_data.get('fabula')
-            if post_data.get('id') != '':
+            if post_data.get('fabula') != None:
+                question.fabula=post_data.get('fabula')
+            if post_data.get('archive') != None:
+                question.archive=post_data.get('archive')                    
+            if post_data.get('id') != None:
                 question.executor_id = post_data.get('id')
             db.session.add(question)
             db.session.commit()                
@@ -89,8 +92,11 @@ def single_question(question_id):
             response_object['message'] = 'Фабула обновлена!' 
         telegram = Telegram.query.filter_by(message_id=question_id).first()
         if telegram:
-            telegram.message=post_data.get('fabula')
-            if post_data.get('id') != '':
+            if post_data.get('fabula') != None:
+                telegram.message=post_data.get('fabula')
+            if post_data.get('archive') != None:
+                telegram.archive=post_data.get('archive')                    
+            if post_data.get('id') != None:
                 telegram.executor_id = post_data.get('id')
             db.session.add(telegram)
             db.session.commit()                

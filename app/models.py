@@ -202,7 +202,8 @@ class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     question_id = db.Column(db.String(128), nullable=True)
     fabula = db.Column(db.Text, nullable=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)  
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    archive = db.Column(db.Boolean, default=False)  
     visitor_id = db.Column(db.Integer, db.ForeignKey('visitors.id'))
     executor_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
@@ -229,12 +230,13 @@ class Question(db.Model):
             if item.executor:
                 obj = {'id': item.id, 'question_id': item.question_id,
                     'fabula': item.fabula, 'timestamp': item.timestamp,
-                    'origin': 'Сайт', 'executor': item.executor.name
+                    'archive': item.archive, 'origin': 'Сайт', 
+                    'executor': item.executor.name
                     }
             else:
                 obj = {'id': item.id, 'question_id': item.question_id,
-                    'fabula': item.fabula, 'timestamp': item.timestamp, 
-                    'origin': 'Сайт'
+                    'fabula': item.fabula, 'timestamp': item.timestamp,
+                    'archive': item.archive, 'origin': 'Сайт'
                     }
             questions_list.append(obj)
         return questions_list 
@@ -263,7 +265,8 @@ class Telegram(db.Model):
     chat_id = db.Column(db.String(128), nullable=True)
     message_id = db.Column(db.String(128), nullable=True)
     message = db.Column(db.Text, nullable=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)  
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow) 
+    archive = db.Column(db.Boolean, default=False) 
     visitor_id = db.Column(db.Integer, db.ForeignKey('visitors.id'))
     executor_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
@@ -291,12 +294,13 @@ class Telegram(db.Model):
             if item.executor:
                 obj = {'id': item.id, 'question_id': item.message_id,
                     'fabula': item.message, 'timestamp': item.timestamp,
-                    'origin': 'Telegram', 'executor': item.executor.name
+                    'archive': item.archive, 'origin': 'Telegram', 
+                    'executor': item.executor.name
                     }
             else:
                 obj = {'id': item.id, 'question_id': item.message_id,
                     'fabula': item.message, 'timestamp': item.timestamp,
-                    'origin': 'Telegram'
+                    'archive': item.archive, 'origin': 'Telegram'
                     }
             telegrams_list.append(obj)
         return telegrams_list
