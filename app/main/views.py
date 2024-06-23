@@ -89,7 +89,7 @@ def single_question(question_id):
             db.session.add(question)
             db.session.commit()                
             response_object['warning'] = 'success'
-            response_object['message'] = 'Фабула обновлена!' 
+            response_object['message'] = 'Данные обновлены!' 
         telegram = Telegram.query.filter_by(message_id=question_id).first()
         if telegram:
             if post_data.get('fabula') != None:
@@ -101,7 +101,7 @@ def single_question(question_id):
             db.session.add(telegram)
             db.session.commit()                
             response_object['warning'] = 'success'
-            response_object['message'] = 'Фабула обновлена!'
+            response_object['message'] = 'Данные обновлены!'
     if request.method == 'DELETE':
         question = Question.query.filter_by(question_id=question_id).first()
         if question:

@@ -203,7 +203,7 @@ class Question(db.Model):
     question_id = db.Column(db.String(128), nullable=True)
     fabula = db.Column(db.Text, nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    archive = db.Column(db.Boolean, default=False)  
+    archive = db.Column(db.Boolean, default=False) 
     visitor_id = db.Column(db.Integer, db.ForeignKey('visitors.id'))
     executor_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
@@ -266,7 +266,7 @@ class Telegram(db.Model):
     message_id = db.Column(db.String(128), nullable=True)
     message = db.Column(db.Text, nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow) 
-    archive = db.Column(db.Boolean, default=False) 
+    archive = db.Column(db.Boolean, default=False)
     visitor_id = db.Column(db.Integer, db.ForeignKey('visitors.id'))
     executor_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
