@@ -131,3 +131,30 @@ def password_reset(token):
         db.session.commit()
         print('Изменение пароля подтверждено!')
     return render_template('auth/password_reset.html', user=user)
+
+@auth.route('/profile', methods=['PUT'])
+@secret_required
+def profile():
+    response_object = {}
+    if request.method == 'PUT':
+        post_data = request.get_json()
+        name = post_data.get('name')
+        phone = post_data.get('phone')
+        new_phone = post_data.get('newPhone')
+        user = User.verify_user_by_phone(phone)
+        if user:
+            if name != '' and name is not None:
+                user.name = name
+                db.session.add(user)
+                response_object['warning'] = 'success'
+                response_object['message'] = f'Данные пользователя {phone} обновлены'
+            if new_phone != '' and new_phone is not None:
+                user.phone = new_phone
+                db.session.add(user)
+                response_object['warning'] = 'success'
+                response_object['message'] = f'Данные пользователя {new_phone} обновлены'
+        else:
+            response_object['warning'] = 'warning'
+            response_object['message'] = 'Пользователь не существует'    
+        db.session.commit()
+    return jsonify(response_object), 200
