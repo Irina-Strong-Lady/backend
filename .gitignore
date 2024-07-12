@@ -1,7 +1,5 @@
 venv
 __pycache__
 development
-migrations
 .bashrc
 .env
-phonenumbers-8.13.6-py2.py3-none-any.whl

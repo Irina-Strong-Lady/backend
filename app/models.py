@@ -15,9 +15,16 @@ class User(db.Model):
     phone = db.Column(PhoneNumberType(region='RU', max_length=20))
     password_hash = db.Column(db.String(128))
     confirmed = db.Column(db.Boolean, default=False)
+    admin = db.Column(db.Boolean, default=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     questions = db.relationship('Question', backref='executor', lazy='dynamic')
     telegrams = db.relationship('Telegram', backref='executor', lazy='dynamic')
+    
+    def __init__(self, **kwargs):
+        super(User, self).__init__(**kwargs)        
+        if self.phone is not None:
+            if self.phone == current_app.config['APP_ADMIN_PHONE']:
+                self.admin = True
 
     @property
     def serialize(self):
