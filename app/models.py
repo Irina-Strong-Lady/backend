@@ -34,6 +34,7 @@ class User(db.Model):
             'phone': self.phone.__str__(),
             'password': self.password_hash,
             'confirmed': self.confirmed,
+            'admin': self.admin,
             'timestamp': self.timestamp
         }
     
@@ -42,7 +43,9 @@ class User(db.Model):
         users_list = []
         users = cls.query.all()
         for item in users:
-            obj = {'id': item.id, 'name': item.name,
+            obj = {'id': item.id, 
+                   'name': item.name,
+                   'admin': item.admin,
                    'phone': item.phone.__str__()}
             users_list.append(obj)
         return users_list
@@ -87,6 +90,7 @@ class User(db.Model):
                             'password_hash': self.password_hash,
                             'name': self.name,
                             'phone': self.phone.__str__(),
+                            'admin': self.admin,
                             'exp': datetime.now(tz=timezone.utc) + timedelta(seconds=expiration)                            
                             },
                             current_app.config['SECRET_KEY'],
@@ -181,10 +185,10 @@ class Visitor(db.Model):
             self.phone = question
             db.session.add(self)
             send_message(chat_id, text=current_app.config['TELEBOT_END_MSG'])
-            # send_email(os.environ.get('APP_ADMIN'), 
-                       # current_app.config['TELEBOT_EMAIL_HEADER'], 
-                       # 'mail/send_admin_telebot', name=self.name, 
-                       # phone=self.phone, question=question_fabula.message)
+            send_email(os.environ.get('APP_ADMIN'), 
+                       current_app.config['TELEBOT_EMAIL_HEADER'], 
+                       'mail/send_admin_telebot', name=self.name, 
+                       phone=self.phone, question=question_fabula.message)
         elif question_fabula and phone_check is False:
             send_message(chat_id, text=current_app.config['TELEBOT_PHONE_MSG'])
     
@@ -237,13 +241,20 @@ class Question(db.Model):
             if item.executor:
                 obj = {'id': item.id, 'question_id': item.question_id,
                     'fabula': item.fabula, 'timestamp': item.timestamp,
-                    'archive': item.archive, 'origin': 'Сайт', 
-                    'executor': item.executor.name
+                    'archive': item.archive, 'visitor_id': item.author.id, 
+                    'visitor_name': item.author.name,
+                    'visitor_phone': item.author.phone.__str__(), 
+                    'visitor_email': item.author.email, 
+                    'executor': item.executor.name, 'executor_id': item.executor_id,
+                    'origin': 'Сайт'
                     }
             else:
                 obj = {'id': item.id, 'question_id': item.question_id,
                     'fabula': item.fabula, 'timestamp': item.timestamp,
-                    'archive': item.archive, 'origin': 'Сайт'
+                    'archive': item.archive, 'visitor_id': item.author.id, 
+                    'visitor_name': item.author.name,
+                    'visitor_phone': item.author.phone.__str__(), 
+                    'visitor_email': item.author.email, 'origin': 'Сайт'
                     }
             questions_list.append(obj)
         return questions_list 
@@ -301,13 +312,22 @@ class Telegram(db.Model):
             if item.executor:
                 obj = {'id': item.id, 'question_id': item.message_id,
                     'fabula': item.message, 'timestamp': item.timestamp,
-                    'archive': item.archive, 'origin': 'Telegram', 
-                    'executor': item.executor.name
+                    'archive': item.archive, 'visitor_id': item.author.id, 
+                    'visitor_name': item.author.name,
+                    'visitor_phone': item.author.phone.__str__(), 
+                    'visitor_email': item.author.email, 
+                    'executor': item.executor.name, 
+                    'executor_id': item.executor_id,
+                    'origin': 'Telegram', 
                     }
             else:
                 obj = {'id': item.id, 'question_id': item.message_id,
                     'fabula': item.message, 'timestamp': item.timestamp,
-                    'archive': item.archive, 'origin': 'Telegram'
+                    'archive': item.archive, 'visitor_id': item.author.id, 
+                    'visitor_name': item.author.name,
+                    'visitor_phone': item.author.phone.__str__(), 
+                    'visitor_email': item.author.email, 
+                    'origin': 'Telegram'
                     }
             telegrams_list.append(obj)
         return telegrams_list

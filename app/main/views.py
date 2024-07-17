@@ -55,9 +55,9 @@ def questions():
         db.session.commit()
         response_object['warning'] = 'success'
         response_object['message'] = 'Успешно! Ваш вопрос передан в обработку'
-        # send_email(os.environ.get('APP_ADMIN'), f'Заявка № {question.id}', 'mail/send_admin', visitor=visitor, question=question)
-        # if visitor.email != '':
-        #     send_email(visitor.email, f'Номер Вашей заявки (заявка № {question.id})', 'mail/send_user', visitor=visitor, question=question)
+        send_email(os.environ.get('APP_ADMIN'), f'Заявка № {question.id}', 'mail/send_admin', visitor=visitor, question=question)
+        if visitor.email != '':
+            send_email(visitor.email, f'Номер Вашей заявки (заявка № {question.id})', 'mail/send_user', visitor=visitor, question=question)
     else:
         response_object['warning'] = 'error'
         response_object['message'] = 'Внутренняя ошибка сервера. Попробуйте позже' 

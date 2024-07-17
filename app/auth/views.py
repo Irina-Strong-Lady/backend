@@ -158,3 +158,42 @@ def profile():
             response_object['message'] = 'Пользователь не существует'    
         db.session.commit()
     return jsonify(response_object), 200
+
+@auth.route('/role_update/<id>', methods=['PUT'])
+@secret_required
+def role_update(id):
+    response_object = {}
+    if request.method == 'PUT':
+        post_data = request.get_json()
+        user = User.query.filter_by(id=id).first()
+        if user:
+            if post_data.get('role') != None:
+                role = post_data.get('role')
+                user.admin = role
+                db.session.add(user)
+                db.session.commit()
+                response_object['warning'] = 'success'
+                response_object['message'] = 'Данные обновлены!'                   
+    return jsonify(response_object)
+
+@auth.route('/user_delete/<id>', methods=['DELETE'])
+@secret_required
+def user_delete(id):
+    from sqlalchemy.exc import IntegrityError
+    response_object = {}
+    if request.method == 'DELETE':
+        if id == 'undefined':
+            response_object['warning'] = 'warning'
+            response_object['message'] = 'Выберите профиль пользователя' 
+        else:              
+            user = User.query.filter_by(id=id).first()
+            if user:
+                db.session.delete(user)
+                try:
+                    db.session.commit()
+                except IntegrityError:
+                    db.session.rollback()          
+                response_object['warning'] = 'success'
+                response_object['message'] = f'Аккаунт пользователя {user.name} {user.phone} удален!'                  
+    return jsonify(response_object)
+
