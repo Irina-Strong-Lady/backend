@@ -239,23 +239,25 @@ class Question(db.Model):
         questions = cls.query.all()
         for item in questions:
             if item.executor:
-                obj = {'id': item.id, 'question_id': item.question_id,
-                    'fabula': item.fabula, 'timestamp': item.timestamp,
-                    'archive': item.archive, 'visitor_id': item.author.id, 
-                    'visitor_name': item.author.name,
-                    'visitor_phone': item.author.phone.__str__(), 
-                    'visitor_email': item.author.email, 
-                    'executor': item.executor.name, 'executor_id': item.executor_id,
-                    'origin': 'Сайт'
-                    }
+                obj = {'id': item.id, 
+                       'question_id': item.question_id,
+                        'fabula': item.fabula, 
+                        'timestamp': item.timestamp,
+                        'archive': item.archive, 
+                        'visitor': item.author.serialize, 
+                        'executor': item.executor.name, 
+                        'executor_id': item.executor_id,
+                        'origin': 'Сайт'
+                      }
             else:
-                obj = {'id': item.id, 'question_id': item.question_id,
-                    'fabula': item.fabula, 'timestamp': item.timestamp,
-                    'archive': item.archive, 'visitor_id': item.author.id, 
-                    'visitor_name': item.author.name,
-                    'visitor_phone': item.author.phone.__str__(), 
-                    'visitor_email': item.author.email, 'origin': 'Сайт'
-                    }
+                obj = {'id': item.id, 
+                       'question_id': item.question_id,
+                       'fabula': item.fabula, 
+                       'timestamp': item.timestamp,
+                       'archive': item.archive,
+                       'visitor': item.author.serialize, 
+                       'origin': 'Сайт'
+                      }
             questions_list.append(obj)
         return questions_list 
     
@@ -310,25 +312,22 @@ class Telegram(db.Model):
         telegrams = cls.query.all()
         for item in telegrams:
             if item.executor:
-                obj = {'id': item.id, 'question_id': item.message_id,
-                    'fabula': item.message, 'timestamp': item.timestamp,
-                    'archive': item.archive, 'visitor_id': item.author.id, 
-                    'visitor_name': item.author.name,
-                    'visitor_phone': item.author.phone.__str__(), 
-                    'visitor_email': item.author.email, 
-                    'executor': item.executor.name, 
-                    'executor_id': item.executor_id,
-                    'origin': 'Telegram', 
-                    }
+                obj = {'id': item.id, 
+                       'question_id': item.message_id,
+                       'fabula': item.message, 'timestamp': item.timestamp,
+                       'archive': item.archive, 
+                       'visitor': item.author.serialize, 
+                       'executor': item.executor.name, 
+                       'executor_id': item.executor_id,
+                       'origin': 'Telegram', 
+                      }
             else:
                 obj = {'id': item.id, 'question_id': item.message_id,
-                    'fabula': item.message, 'timestamp': item.timestamp,
-                    'archive': item.archive, 'visitor_id': item.author.id, 
-                    'visitor_name': item.author.name,
-                    'visitor_phone': item.author.phone.__str__(), 
-                    'visitor_email': item.author.email, 
-                    'origin': 'Telegram'
-                    }
+                       'fabula': item.message, 'timestamp': item.timestamp,
+                       'archive': item.archive, 
+                       'visitor': item.author.serialize, 
+                       'origin': 'Telegram'
+                      }
             telegrams_list.append(obj)
         return telegrams_list
     
